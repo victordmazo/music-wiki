@@ -1,0 +1,368 @@
+### NE Scene-pedia API walkthrough
+# See README.md in this folder for setup. Send requests top to bottom with the
+# REST Client extension's "Send Request" links. Tokens and ids are picked up
+# automatically from earlier responses — you shouldn't need to copy anything by
+# hand except at the moderator checkpoint below.
+
+@host = http://localhost:3000
+
+@aliceEmail = alice.scenepedia@example.com
+@alicePassword = correct-horse-1
+@aliceUsername = alice
+
+@bobEmail = bob.scenepedia@example.com
+@bobPassword = correct-horse-2
+@bobUsername = bob
+
+@modEmail = mod.scenepedia@example.com
+@modPassword = correct-horse-3
+@modUsername = modtest
+
+
+### =========================================================================
+### 1. Register three accounts: two regular users, one future moderator.
+### Registration bypasses email confirmation (see CLAUDE.md), so you can log
+### in immediately after.
+### =========================================================================
+
+### 1a. Register alice
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{aliceEmail}}",
+  "password": "{{alicePassword}}"
+}
+
+### 1b. Register bob
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{bobEmail}}",
+  "password": "{{bobPassword}}"
+}
+
+### 1c. Register the moderator-to-be
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{modEmail}}",
+  "password": "{{modPassword}}"
+}
+
+
+### =========================================================================
+### 2. Log in as each account to get an access token.
+### NOTE the double "session.session" below: /api/auth/login wraps whatever
+### supabase-js's signInWithPassword returns (itself a {user, session} object)
+### under a top-level "session" key.
+### =========================================================================
+
+### 2a. Log in as alice
+# @name loginAlice
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{aliceEmail}}",
+  "password": "{{alicePassword}}"
+}
+
+### 2b. Log in as bob
+# @name loginBob
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{bobEmail}}",
+  "password": "{{bobPassword}}"
+}
+
+### 2c. Log in as the moderator-to-be
+# @name loginMod
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{modEmail}}",
+  "password": "{{modPassword}}"
+}
+
+@aliceToken = {{loginAlice.response.body.$.session.session.access_token}}
+@bobToken = {{loginBob.response.body.$.session.session.access_token}}
+@modToken = {{loginMod.response.body.$.session.session.access_token}}
+
+
+### =========================================================================
+### 3. Create a myapp_profile row for each account. Everything past this point
+### needs one (requests, discussions, posts all require an active profile).
+### =========================================================================
+
+### 3a. Alice's profile
+POST {{host}}/api/profile
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "username": "{{aliceUsername}}",
+  "biography": "NE hardcore fan, here to add some bands."
+}
+
+### 3b. Bob's profile
+POST {{host}}/api/profile
+Authorization: Bearer {{bobToken}}
+Content-Type: application/json
+
+{
+  "username": "{{bobUsername}}"
+}
+
+### 3c. Moderator's profile
+POST {{host}}/api/profile
+Authorization: Bearer {{modToken}}
+Content-Type: application/json
+
+{
+  "username": "{{modUsername}}"
+}
+
+
+### =========================================================================
+### >>> CHECKPOINT <<<
+### There is deliberately no API endpoint that creates the first moderator —
+### otherwise any registered user could promote themselves. Run this once in
+### the Supabase SQL editor, then come back and continue below.
+###
+###   update myapp_profile set role = 'moderator' where username = 'modtest';
+###
+### No need to log in again afterwards: role isn't stored in the JWT, so the
+### modToken above already works — every request re-reads the profile fresh.
+### =========================================================================
+
+
+### =========================================================================
+### 4. Genres and entries: public, no auth required.
+### =========================================================================
+
+### 4a. List genres (seeded by supabase/schema.sql)
+GET {{host}}/api/genres
+
+### 4b. List entries (empty on a fresh database)
+GET {{host}}/api/entries
+
+
+### =========================================================================
+### 5. The request/review workflow: alice proposes a new entry, the moderator
+### reviews it, and the entry becomes public once approved.
+### =========================================================================
+
+### 5a. Alice submits a request for a new wiki entry (genre 1 = Punk, seeded)
+# @name createEntryRequest
+POST {{host}}/api/requests
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "request_type": "create",
+  "proposed_data": {
+    "title": "The Fake Band",
+    "description": "A made-up Boston punk band, for testing.",
+    "location": "Boston, MA",
+    "genre_ids": [1]
+  },
+  "reason": "Adding a well-known local act."
+}
+
+### 5b. Alice can see her own pending request
+GET {{host}}/api/requests
+Authorization: Bearer {{aliceToken}}
+
+### 5c. Bob (a regular user) only sees his own requests — none yet
+GET {{host}}/api/requests
+Authorization: Bearer {{bobToken}}
+
+### 5d. Bob cannot review requests (expect 403)
+POST {{host}}/api/requests/{{createEntryRequest.response.body.$.request.id}}/review
+Authorization: Bearer {{bobToken}}
+Content-Type: application/json
+
+{
+  "approve": true
+}
+
+### 5e. The moderator sees the full pending queue
+GET {{host}}/api/requests?status=pending
+Authorization: Bearer {{modToken}}
+
+### 5f. The moderator approves alice's request
+# @name reviewCreateRequest
+POST {{host}}/api/requests/{{createEntryRequest.response.body.$.request.id}}/review
+Authorization: Bearer {{modToken}}
+Content-Type: application/json
+
+{
+  "approve": true,
+  "note": "Looks good."
+}
+
+### 5g. The new entry is now public
+GET {{host}}/api/entries
+
+### 5h. Fetch it by slug to see genres and the edit-log entry the approval created
+GET {{host}}/api/entries/the-fake-band
+
+
+### =========================================================================
+### 6. Editing an existing entry, including a denial (no effect) and an
+### approval (change applied + logged).
+### =========================================================================
+
+### 6a. Alice requests an edit
+# @name editRequestDenied
+POST {{host}}/api/requests
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "request_type": "edit",
+  "entry_id": {{reviewCreateRequest.response.body.$.request.entry_id}},
+  "proposed_data": {
+    "description": "Replaced with something worse."
+  },
+  "reason": "oops, ignore me"
+}
+
+### 6b. Alice withdraws it herself instead of waiting on the moderator
+DELETE {{host}}/api/requests/{{editRequestDenied.response.body.$.request.id}}
+Authorization: Bearer {{aliceToken}}
+
+### 6c. Alice submits the edit she actually wants
+# @name editRequestApproved
+POST {{host}}/api/requests
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "request_type": "edit",
+  "entry_id": {{reviewCreateRequest.response.body.$.request.entry_id}},
+  "proposed_data": {
+    "description": "Boston punk trio, formed 2024. Regulars at O'Brien's."
+  }
+}
+
+### 6d. The moderator approves it
+POST {{host}}/api/requests/{{editRequestApproved.response.body.$.request.id}}/review
+Authorization: Bearer {{modToken}}
+Content-Type: application/json
+
+{
+  "approve": true
+}
+
+### 6e. Confirm the change applied and check the revision history
+# (revisions[0].editor should be alice, not the moderator who approved it)
+GET {{host}}/api/entries/the-fake-band
+
+
+### =========================================================================
+### 7. Discussions and comments.
+### =========================================================================
+
+### 7a. Alice starts a discussion about the entry
+# @name createDiscussion
+POST {{host}}/api/discussions
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "title": "Anyone seen The Fake Band live?",
+  "entry_id": {{reviewCreateRequest.response.body.$.request.entry_id}}
+}
+
+### 7b. Anyone can read discussions without logging in
+GET {{host}}/api/discussions?entry_id={{reviewCreateRequest.response.body.$.request.entry_id}}
+
+### 7c. Bob comments
+# @name bobPost
+POST {{host}}/api/discussions/{{createDiscussion.response.body.$.discussion.id}}/posts
+Authorization: Bearer {{bobToken}}
+Content-Type: application/json
+
+{
+  "contents": "Saw them last month, they're great."
+}
+
+### 7d. Alice comments too, then edits her own comment
+# @name alicePost
+POST {{host}}/api/discussions/{{createDiscussion.response.body.$.discussion.id}}/posts
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "contents": "cool cool cool"
+}
+
+### 7e. Alice edits her own comment (edited_at should now be set)
+PATCH {{host}}/api/posts/{{alicePost.response.body.$.post.id}}
+Authorization: Bearer {{aliceToken}}
+Content-Type: application/json
+
+{
+  "contents": "Nice, might check out the next show."
+}
+
+### 7f. Bob cannot delete alice's comment (expect 403)
+DELETE {{host}}/api/posts/{{alicePost.response.body.$.post.id}}
+Authorization: Bearer {{bobToken}}
+
+### 7g. But the moderator can delete bob's comment
+DELETE {{host}}/api/posts/{{bobPost.response.body.$.post.id}}
+Authorization: Bearer {{modToken}}
+
+
+### =========================================================================
+### 8. User moderation. User ids come straight off the earlier login
+### responses (same uuid Supabase Auth and myapp_profile both use).
+### =========================================================================
+
+@bobUserId = {{loginBob.response.body.$.session.session.user.id}}
+@modUserId = {{loginMod.response.body.$.session.session.user.id}}
+
+### 8a. Suspend bob
+PATCH {{host}}/api/users/{{bobUserId}}/moderate
+Authorization: Bearer {{modToken}}
+Content-Type: application/json
+
+{
+  "status": "suspended",
+  "suspended_until": "2099-01-01T00:00:00Z"
+}
+
+### 8b. Bob can no longer comment (expect 403)
+POST {{host}}/api/discussions/{{createDiscussion.response.body.$.discussion.id}}/posts
+Authorization: Bearer {{bobToken}}
+Content-Type: application/json
+
+{
+  "contents": "let me back in"
+}
+
+### 8c. The moderator cannot suspend or promote themselves (expect 403)
+PATCH {{host}}/api/users/{{modUserId}}/moderate
+Authorization: Bearer {{modToken}}
+Content-Type: application/json
+
+{
+  "status": "banned"
+}
+
+### 8d. Reinstate bob
+PATCH {{host}}/api/users/{{bobUserId}}/moderate
+Authorization: Bearer {{modToken}}
+Content-Type: application/json
+
+{
+  "status": "active"
+}
