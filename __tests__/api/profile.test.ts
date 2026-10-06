@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockProfile = { id: 'user-123', username: 'testuser', biography: 'Hello!' };
 
+type ProfileResult = Promise<{ data: typeof mockProfile | null; error: { message: string } | null }>;
+
 const mockBuilder = {
   select: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
   update: vi.fn().mockReturnThis(),
   insert: vi.fn().mockReturnThis(),
-  maybeSingle: vi.fn(async () => ({ data: mockProfile, error: null })),
-  single: vi.fn(async () => ({ data: mockProfile, error: null })),
+  maybeSingle: vi.fn(async (): ProfileResult => ({ data: mockProfile, error: null })),
+  single: vi.fn(async (): ProfileResult => ({ data: mockProfile, error: null })),
 };
 
 vi.mock('../../lib/supabase', () => ({

@@ -6,11 +6,16 @@ const mockBuilder = {
   update: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
   select: vi.fn().mockReturnThis(),
-  single: vi.fn(async () => ({ data: mockProfile, error: null })),
+  single: vi.fn(
+    async (): Promise<{ data: typeof mockProfile | null; error: { message: string } | null }> => ({
+      data: mockProfile,
+      error: null,
+    })
+  ),
 };
 
 const mockStorage = {
-  upload: vi.fn(async () => ({ error: null })),
+  upload: vi.fn(async (): Promise<{ error: { message: string } | null }> => ({ error: null })),
   getPublicUrl: vi.fn(() => ({ data: { publicUrl: 'https://example.com/avatars/user-123.jpg' } })),
 };
 

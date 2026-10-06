@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     .from('myapp_profile')
     .update({ avatar_url: publicUrl })
     .eq('id', user.id)
-    .select('id, username, biography, avatar_url')
+    .select('id, username, biography, avatar_url, role, status')
     .single();
 
   if (updateError) return Response.json({ error: updateError.message }, { status: 400 });

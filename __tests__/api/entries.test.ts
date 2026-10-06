@@ -56,9 +56,43 @@ describe('GET /api/entries/:slug', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      entry: { id: 1, slug: 'the-fake-band', title: 'The Fake Band' },
+      entry: { id: 1, slug: 'the-fake-band', title: 'The Fake Band', images: [] },
       revisions: [{ id: 10, action: 'create' }],
     });
+  });
+
+  it('resolves each image storage_path to a public URL', async () => {
+    const supabase = createSupabaseMock({
+      fromQueue: [
+        ok({
+          id: 1,
+          slug: 'the-fake-band',
+          title: 'The Fake Band',
+          images: [{ id: 1, storage_path: 'alice/photo.jpg', caption: 'Live at O\'Brien\'s' }],
+        }),
+        ok([]),
+      ],
+    });
+    (supabase as unknown as { storage: unknown }).storage = {
+      from: vi.fn(() => ({
+        getPublicUrl: (path: string) => ({ data: { publicUrl: `https://cdn.example.com/entry-images/${path}` } }),
+      })),
+    };
+    mockGetSupabaseClient.mockReturnValue(supabase as never);
+
+    const response = await getEntry(new Request('http://localhost/api/entries/the-fake-band'), {
+      params: Promise.resolve({ slug: 'the-fake-band' }),
+    });
+
+    const body = await response.json();
+    expect(body.entry.images).toEqual([
+      {
+        id: 1,
+        storage_path: 'alice/photo.jpg',
+        caption: "Live at O'Brien's",
+        url: 'https://cdn.example.com/entry-images/alice/photo.jpg',
+      },
+    ]);
   });
 
   it('returns 404 when the entry does not exist', async () => {

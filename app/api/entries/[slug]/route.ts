@@ -23,6 +23,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!entry) return Response.json({ error: 'Entry not found.' }, { status: 404 });
 
+  // storage_path is just the object's path inside the bucket, not a loadable URL —
+  // resolve each one to its public URL here so the client never needs bucket details.
+  const images = (entry as unknown as { images?: { storage_path: string }[] }).images;
+  const imagesWithUrls = (images ?? []).map((image) => ({
+    ...image,
+    url: supabase.storage.from('entry-images').getPublicUrl(image.storage_path).data.publicUrl,
+  }));
+
   const { data: revisions, error: revisionError } = await supabase
     .from('myapp_entry_revision')
     .select('id, action, old_data, new_data, created_at, editor:myapp_profile(username)')
@@ -32,5 +40,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
 
   if (revisionError) return Response.json({ error: revisionError.message }, { status: 500 });
 
-  return Response.json({ entry, revisions: revisions ?? [] }, { status: 200 });
+  return Response.json(
+    { entry: { ...(entry as object), images: imagesWithUrls }, revisions: revisions ?? [] },
+    { status: 200 }
+  );
 }

@@ -90,6 +90,8 @@ Content-Type: application/json
   "password": "{{modPassword}}"
 }
 
+###
+
 @aliceToken = {{loginAlice.response.body.$.session.session.access_token}}
 @bobToken = {{loginBob.response.body.$.session.session.access_token}}
 @modToken = {{loginMod.response.body.$.session.session.access_token}}

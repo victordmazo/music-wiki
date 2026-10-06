@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase!
     .from('myapp_profile')
-    .select('id, username, biography, avatar_url')
+    .select('id, username, biography, avatar_url, role, status')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase!
     .from('myapp_profile')
     .insert({ id: user.id, username, biography: biography ?? '' })
-    .select('id, username, biography, avatar_url')
+    .select('id, username, biography, avatar_url, role, status')
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 400 });
@@ -73,7 +73,7 @@ export async function PATCH(request: Request) {
     .from('myapp_profile')
     .update({ biography })
     .eq('id', user.id)
-    .select('id, username, biography, avatar_url')
+    .select('id, username, biography, avatar_url, role, status')
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 400 });
