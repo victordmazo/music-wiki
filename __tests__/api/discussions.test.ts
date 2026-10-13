@@ -5,6 +5,7 @@ vi.mock('../../lib/supabase', () => ({ getSupabaseClient: vi.fn() }));
 
 import { getSupabaseClient } from '../../lib/supabase';
 import { GET as listDiscussions, POST as createDiscussion } from '../../app/api/discussions/route';
+import { GET as getDiscussion } from '../../app/api/discussions/[id]/route';
 import { GET as listPosts, POST as createPost } from '../../app/api/discussions/[id]/posts/route';
 
 const mockGetSupabaseClient = vi.mocked(getSupabaseClient);
@@ -100,6 +101,42 @@ describe('POST /api/discussions', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ discussion: created });
+  });
+});
+
+describe('GET /api/discussions/:id', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns one discussion without requiring auth', async () => {
+    const discussion = {
+      id: 1,
+      entry_id: 5,
+      title: 'Anyone seen The Fake Band live?',
+      created_by: 'alice-id',
+      created_at: 'now',
+      author: { username: 'alice' },
+      entry: { slug: 'the-fake-band', title: 'The Fake Band' },
+    };
+    mockGetSupabaseClient.mockReturnValue(createSupabaseMock({ fromQueue: [ok(discussion)] }) as never);
+
+    const response = await getDiscussion(new Request('http://localhost/api/discussions/1'), {
+      params: Promise.resolve({ id: '1' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ discussion });
+  });
+
+  it('returns 404 when the discussion does not exist', async () => {
+    mockGetSupabaseClient.mockReturnValue(createSupabaseMock({ fromQueue: [ok(null)] }) as never);
+
+    const response = await getDiscussion(new Request('http://localhost/api/discussions/999'), {
+      params: Promise.resolve({ id: '999' }),
+    });
+
+    expect(response.status).toBe(404);
   });
 });
 

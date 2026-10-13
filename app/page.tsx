@@ -9,6 +9,7 @@ export default function Home() {
         </p>
         <div className="mt-8 flex flex-wrap gap-4 text-sm text-slate-200">
           <a href="/entries" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Browse the wiki</a>
+          <a href="/discussions" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Discussions</a>
           <a href="/requests" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">My requests</a>
           <a href="/login" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Go to login</a>
           <a href="/register" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Go to register</a>

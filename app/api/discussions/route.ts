@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('myapp_discussion')
-    .select('id, entry_id, title, created_by, created_at, author:myapp_profile(username)')
+    .select('id, entry_id, title, created_by, created_at, author:myapp_profile(username), entry:myapp_entry(slug,title)')
     .order('created_at', { ascending: false });
 
   if (entryId) query = query.eq('entry_id', entryId);

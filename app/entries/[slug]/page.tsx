@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../../lib/api-client';
 import { useCurrentProfile } from '../../../lib/use-current-profile';
-import type { EntryDetail, EntryRevision } from '../../../lib/types';
+import type { Discussion, EntryDetail, EntryRevision } from '../../../lib/types';
 
 function describeChange(revision: EntryRevision): string {
   const fields = Object.keys(revision.new_data ?? {});
@@ -15,6 +15,7 @@ function describeChange(revision: EntryRevision): string {
 
 export default function EntryDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
   const { token, loading: profileLoading } = useCurrentProfile();
 
   const [entry, setEntry] = useState<EntryDetail | null>(null);
@@ -27,6 +28,11 @@ export default function EntryDetailPage() {
   const [deleteReason, setDeleteReason] = useState('');
   const [submittingDelete, setSubmittingDelete] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState('');
+
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [startingDiscussion, setStartingDiscussion] = useState(false);
+  const [discussionTitle, setDiscussionTitle] = useState('');
+  const [submittingDiscussion, setSubmittingDiscussion] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -43,6 +49,27 @@ export default function EntryDetailPage() {
       }
     });
   }, [slug]);
+
+  useEffect(() => {
+    if (!entry) return;
+    apiFetch<{ discussions: Discussion[] }>(`/api/discussions?entry_id=${entry.id}`).then((result) => {
+      if (result.ok) setDiscussions(result.data.discussions);
+    });
+  }, [entry?.id]);
+
+  async function handleStartDiscussion(event: React.FormEvent) {
+    event.preventDefault();
+    if (!entry) return;
+    setSubmittingDiscussion(true);
+    setError('');
+    const result = await apiFetch<{ discussion: Discussion }>('/api/discussions', {
+      method: 'POST',
+      body: { title: discussionTitle, entry_id: entry.id },
+    });
+    setSubmittingDiscussion(false);
+    if (result.ok) router.push(`/discussions/${result.data.discussion.id}`);
+    else setError(result.error);
+  }
 
   async function handleRequestDeletion() {
     if (!entry) return;
@@ -175,6 +202,60 @@ export default function EntryDetailPage() {
         ) : null}
 
         {deleteMessage ? <p className="mt-4 text-sm text-slate-300">{deleteMessage}</p> : null}
+
+        <div className="mt-10">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-widest text-slate-400">Discussions</p>
+            {!profileLoading && token && !startingDiscussion ? (
+              <button
+                onClick={() => setStartingDiscussion(true)}
+                className="text-xs text-emerald-300 hover:underline"
+              >
+                + Start a discussion
+              </button>
+            ) : null}
+          </div>
+
+          {startingDiscussion ? (
+            <form onSubmit={handleStartDiscussion} className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={discussionTitle}
+                onChange={(event) => setDiscussionTitle(event.target.value)}
+                required
+                placeholder={`What's up with ${entry.title}?`}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+              />
+              <button
+                type="submit"
+                disabled={submittingDiscussion}
+                className="shrink-0 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-70"
+              >
+                {submittingDiscussion ? 'Starting…' : 'Start'}
+              </button>
+            </form>
+          ) : null}
+
+          {discussions.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">No discussions about this entry yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {discussions.map((discussion) => (
+                <li key={discussion.id}>
+                  <Link
+                    href={`/discussions/${discussion.id}`}
+                    className="block rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200 hover:border-emerald-400/60"
+                  >
+                    {discussion.title}
+                    {discussion.author?.username ? (
+                      <span className="text-slate-500"> · started by {discussion.author.username}</span>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div className="mt-10">
           <p className="text-xs uppercase tracking-widest text-slate-400">Edit history</p>

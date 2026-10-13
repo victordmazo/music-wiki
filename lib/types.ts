@@ -36,6 +36,26 @@ export type EntryRevision = {
   editor: { username: string } | null;
 };
 
+export type Discussion = {
+  id: number;
+  entry_id: number | null;
+  title: string;
+  created_by: string | null;
+  created_at: string;
+  author?: { username: string } | null;
+  entry?: { slug: string; title: string } | null;
+};
+
+export type Post = {
+  id: number;
+  discussion_id: number;
+  author_id: string;
+  contents: string;
+  created_at: string;
+  edited_at: string | null;
+  author?: { username: string } | null;
+};
+
 export type RequestType = 'create' | 'edit' | 'delete';
 export type RequestStatus = 'pending' | 'approved' | 'denied';
 
