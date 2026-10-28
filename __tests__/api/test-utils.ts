@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-type QueryResult = { data: unknown; error: { message: string } | null };
+type QueryResult = { data: unknown; error: { message: string } | null; count?: number | null };
 
 /**
  * A minimal stand-in for a Supabase PostgrestFilterBuilder: every filter/modifier

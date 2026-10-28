@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../../lib/api-client';
 import { useCurrentProfile } from '../../../lib/use-current-profile';
+import { EntryTabs } from '../../../components/wiki/EntryTabs';
+import { EmptyState } from '../../../components/wiki/EmptyState';
 import type { Discussion, EntryDetail, EntryRevision } from '../../../lib/types';
 
 function describeChange(revision: EntryRevision): string {
@@ -89,209 +91,209 @@ export default function EntryDetailPage() {
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <p className="text-slate-400">Loading…</p>
-      </main>
-    );
+    return <p className="text-wikisubtle">Loading…</p>;
   }
 
   if (notFound || !entry) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
-        <section className="text-center space-y-4">
-          <p className="text-slate-300">That entry doesn't exist (or was removed).</p>
-          <Link
-            href="/entries"
-            className="inline-block rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-emerald-400 hover:text-emerald-200"
-          >
-            Back to browse
-          </Link>
-        </section>
-      </main>
+      <EmptyState
+        message="There is currently no text in this page. (That entry doesn't exist, or was removed.)"
+        linkHref="/entries"
+        linkLabel="Back to browse"
+      />
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-12">
-      <section className="mx-auto w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900/80 p-10 shadow-2xl shadow-black/30">
-        {error ? (
-          <p className="mb-6 rounded-xl border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">{error}</p>
-        ) : null}
+    <div>
+      <EntryTabs slug={entry.slug} entryId={entry.id} active="read" />
 
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-semibold">{entry.title}</h1>
-            {entry.location ? <p className="mt-1 text-slate-400">{entry.location}</p> : null}
-          </div>
+      {error ? (
+        <p className="mb-4 rounded border border-wikired bg-red-50 p-3 text-sm text-wikired">{error}</p>
+      ) : null}
 
-          {!profileLoading && token ? (
-            <div className="flex gap-3">
-              <Link
-                href={`/entries/${entry.slug}/edit`}
-                className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-emerald-400 hover:text-emerald-200"
-              >
-                Suggest an edit
-              </Link>
-              <button
-                onClick={() => setRequestingDelete((v) => !v)}
-                className="rounded-full border border-red-900 bg-red-950/40 px-4 py-2 text-sm text-red-300 hover:border-red-700"
-              >
-                Request deletion
-              </button>
-            </div>
-          ) : null}
-        </div>
+      <h1 className="wiki-title font-serif text-4xl">{entry.title}</h1>
 
-        {entry.genres && entry.genres.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {entry.genres.map(({ genre }) => (
-              <span
-                key={genre.id}
-                className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-0.5 text-xs text-slate-300"
-              >
-                {genre.name}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        <p className="mt-6 whitespace-pre-wrap text-slate-200">{entry.description || 'No description yet.'}</p>
-
+      <div className="float-right mb-4 ml-6 w-full max-w-[16rem] rounded border border-wikiborder bg-wikigray text-sm">
         {entry.images && entry.images.length > 0 ? (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <img
+            src={entry.images[0].url}
+            alt={entry.images[0].caption ?? entry.title}
+            className="w-full rounded-t object-cover"
+          />
+        ) : null}
+        <table className="w-full border-collapse">
+          <tbody>
+            <tr className="border-t border-wikiborder-light">
+              <th className="w-1/3 bg-slate-100 px-2 py-1.5 text-left align-top font-semibold">Location</th>
+              <td className="px-2 py-1.5">{entry.location || '—'}</td>
+            </tr>
+            <tr className="border-t border-wikiborder-light">
+              <th className="bg-slate-100 px-2 py-1.5 text-left align-top font-semibold">Genres</th>
+              <td className="px-2 py-1.5">
+                {entry.genres && entry.genres.length > 0 ? entry.genres.map(({ genre }) => genre.name).join(', ') : '—'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mb-4 inline-block rounded border border-wikiborder-light bg-wikigray p-3 text-sm">
+        <p className="font-semibold">Contents</p>
+        <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+          <li>
+            <a href="#description">Description</a>
+          </li>
+          {entry.images && entry.images.length > 0 ? (
+            <li>
+              <a href="#photos">Photos</a>
+            </li>
+          ) : null}
+          <li>
+            <a href="#discussions">Discussions</a>
+          </li>
+          <li>
+            <a href="#history">Edit history</a>
+          </li>
+        </ol>
+      </div>
+
+      <h2 id="description" className="wiki-title font-serif text-xl">
+        Description
+      </h2>
+      <p className="mt-2 whitespace-pre-wrap text-wikitext">{entry.description || 'No description yet.'}</p>
+
+      {!profileLoading && token ? (
+        <p className="mt-4 text-sm">
+          <Link href={`/entries/${entry.slug}/edit`}>Suggest an edit</Link>
+          {' · '}
+          <button onClick={() => setRequestingDelete((v) => !v)} className="text-wikired hover:underline">
+            Request deletion
+          </button>
+        </p>
+      ) : null}
+
+      {requestingDelete ? (
+        <div className="mt-4 rounded border border-wikired bg-red-50 p-4">
+          <p className="text-sm text-wikitext">
+            This asks a moderator to remove the entry. It stays up until they approve it.
+          </p>
+          <textarea
+            value={deleteReason}
+            onChange={(event) => setDeleteReason(event.target.value)}
+            placeholder="Why should this be removed? (optional)"
+            rows={2}
+            className="mt-3 w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikired"
+          />
+          <div className="mt-3 flex gap-3">
+            <button
+              onClick={handleRequestDeletion}
+              disabled={submittingDelete}
+              className="rounded bg-wikired px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-70"
+            >
+              {submittingDelete ? 'Submitting…' : 'Submit deletion request'}
+            </button>
+            <button
+              onClick={() => setRequestingDelete(false)}
+              className="rounded border border-wikiborder px-4 py-2 text-sm hover:bg-wikigray"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteMessage ? <p className="mt-4 text-sm text-wikitext">{deleteMessage}</p> : null}
+
+      {entry.images && entry.images.length > 0 ? (
+        <div className="clear-both pt-4">
+          <h2 id="photos" className="wiki-title font-serif text-xl">
+            Photos
+          </h2>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {entry.images.map((image) => (
-              <img
-                key={image.id}
-                src={image.url}
-                alt={image.caption ?? entry.title}
-                className="aspect-square w-full rounded-xl object-cover"
-              />
+              <figure key={image.id}>
+                <img src={image.url} alt={image.caption ?? entry.title} className="aspect-square w-full rounded border border-wikiborder-light object-cover" />
+                {image.caption ? <figcaption className="mt-1 text-xs text-wikisubtle">{image.caption}</figcaption> : null}
+              </figure>
             ))}
           </div>
-        ) : null}
-
-        {requestingDelete ? (
-          <div className="mt-6 rounded-xl border border-red-900 bg-red-950/30 p-4">
-            <p className="text-sm text-red-200">
-              This asks a moderator to remove the entry. It stays up until they approve it.
-            </p>
-            <textarea
-              value={deleteReason}
-              onChange={(event) => setDeleteReason(event.target.value)}
-              placeholder="Why should this be removed? (optional)"
-              rows={2}
-              className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-red-400"
-            />
-            <div className="mt-3 flex gap-3">
-              <button
-                onClick={handleRequestDeletion}
-                disabled={submittingDelete}
-                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-red-400 disabled:opacity-70"
-              >
-                {submittingDelete ? 'Submitting…' : 'Submit deletion request'}
-              </button>
-              <button
-                onClick={() => setRequestingDelete(false)}
-                className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-slate-600"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {deleteMessage ? <p className="mt-4 text-sm text-slate-300">{deleteMessage}</p> : null}
-
-        <div className="mt-10">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-widest text-slate-400">Discussions</p>
-            {!profileLoading && token && !startingDiscussion ? (
-              <button
-                onClick={() => setStartingDiscussion(true)}
-                className="text-xs text-emerald-300 hover:underline"
-              >
-                + Start a discussion
-              </button>
-            ) : null}
-          </div>
-
-          {startingDiscussion ? (
-            <form onSubmit={handleStartDiscussion} className="mt-3 flex gap-2">
-              <input
-                type="text"
-                value={discussionTitle}
-                onChange={(event) => setDiscussionTitle(event.target.value)}
-                required
-                placeholder={`What's up with ${entry.title}?`}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
-              />
-              <button
-                type="submit"
-                disabled={submittingDiscussion}
-                className="shrink-0 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-70"
-              >
-                {submittingDiscussion ? 'Starting…' : 'Start'}
-              </button>
-            </form>
-          ) : null}
-
-          {discussions.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">No discussions about this entry yet.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {discussions.map((discussion) => (
-                <li key={discussion.id}>
-                  <Link
-                    href={`/discussions/${discussion.id}`}
-                    className="block rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200 hover:border-emerald-400/60"
-                  >
-                    {discussion.title}
-                    {discussion.author?.username ? (
-                      <span className="text-slate-500"> · started by {discussion.author.username}</span>
-                    ) : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
+      ) : null}
 
-        <div className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-slate-400">Edit history</p>
-          {revisions.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">No edits yet.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {revisions.map((revision) => (
-                <li key={revision.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm">
-                  <span className="text-slate-200">{describeChange(revision)}</span>
-                  <span className="text-slate-500">
-                    {' '}
-                    by {revision.editor?.username ?? 'a moderator'} ·{' '}
-                    {new Date(revision.created_at).toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {!profileLoading && !token ? (
-          <p className="mt-8 text-sm text-slate-300">
-            <Link href="/login" className="text-emerald-300 hover:underline">
-              Log in
-            </Link>{' '}
-            to suggest edits or request deletion.
-          </p>
+      {/* clear-both here too: covers the no-photos case, where Photos above is skipped
+          entirely and Discussions is the first element after the floated infobox. */}
+      <h2 id="discussions" className="wiki-title clear-both mt-8 font-serif text-xl">
+        Discussions
+      </h2>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="text-sm text-wikisubtle">Talk about this entry.</p>
+        {!profileLoading && token && !startingDiscussion ? (
+          <button onClick={() => setStartingDiscussion(true)} className="text-sm text-wikiblue hover:underline">
+            + Start a discussion
+          </button>
         ) : null}
+      </div>
 
-        <p className="mt-8 text-sm text-slate-300">
-          <Link href="/entries" className="text-emerald-300 hover:underline">
-            Back to browse
-          </Link>
+      {startingDiscussion ? (
+        <form onSubmit={handleStartDiscussion} className="mt-3 flex gap-2">
+          <input
+            type="text"
+            value={discussionTitle}
+            onChange={(event) => setDiscussionTitle(event.target.value)}
+            required
+            placeholder={`What's up with ${entry.title}?`}
+            className="w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
+          />
+          <button
+            type="submit"
+            disabled={submittingDiscussion}
+            className="shrink-0 rounded bg-wikiblue px-4 py-2 text-sm font-semibold text-white hover:bg-wikiblue-dark disabled:opacity-70"
+          >
+            {submittingDiscussion ? 'Starting…' : 'Start'}
+          </button>
+        </form>
+      ) : null}
+
+      {discussions.length === 0 ? (
+        <p className="mt-2 text-sm text-wikisubtle">No discussions about this entry yet.</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-wikiborder-light border-t border-wikiborder-light text-sm">
+          {discussions.map((discussion) => (
+            <li key={discussion.id} className="py-2">
+              <Link href={`/discussions/${discussion.id}`}>{discussion.title}</Link>
+              {discussion.author?.username ? (
+                <span className="text-wikisubtle"> · started by {discussion.author.username}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h2 id="history" className="wiki-title mt-8 font-serif text-xl">
+        Edit history
+      </h2>
+      {revisions.length === 0 ? (
+        <p className="mt-2 text-sm text-wikisubtle">No edits yet.</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-wikiborder-light border-t border-wikiborder-light text-sm">
+          {revisions.map((revision) => (
+            <li key={revision.id} className="py-2">
+              <span className="text-wikitext">{describeChange(revision)}</span>
+              <span className="text-wikisubtle">
+                {' '}
+                by {revision.editor?.username ?? 'a moderator'} · {new Date(revision.created_at).toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!profileLoading && !token ? (
+        <p className="mt-8 text-sm text-wikitext">
+          <Link href="/login">Log in</Link> to suggest edits or request deletion.
         </p>
-      </section>
-    </main>
+      ) : null}
+    </div>
   );
 }

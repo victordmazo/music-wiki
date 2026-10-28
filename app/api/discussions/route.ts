@@ -8,14 +8,21 @@ export async function GET(request: Request) {
   if (!supabase) return Response.json({ error: 'Supabase credentials are not configured.' }, { status: 500 });
 
   const url = new URL(request.url);
-  const entryId = url.searchParams.get('entry_id');
+  const entryIdParam = url.searchParams.get('entry_id');
+  let entryId: number | null = null;
+  if (entryIdParam !== null) {
+    entryId = Number(entryIdParam);
+    if (!Number.isInteger(entryId)) {
+      return Response.json({ error: 'entry_id must be a whole number.' }, { status: 400 });
+    }
+  }
 
   let query = supabase
     .from('myapp_discussion')
     .select('id, entry_id, title, created_by, created_at, author:myapp_profile(username), entry:myapp_entry(slug,title)')
     .order('created_at', { ascending: false });
 
-  if (entryId) query = query.eq('entry_id', entryId);
+  if (entryId !== null) query = query.eq('entry_id', entryId);
 
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });

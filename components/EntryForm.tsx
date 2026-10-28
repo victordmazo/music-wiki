@@ -89,85 +89,93 @@ export function EntryForm({
           images: pendingImages.map(({ path, caption }) => ({ storage_path: path, caption: caption || null })),
         });
       }}
-      className="mt-6 space-y-5"
+      className="mt-4 space-y-4"
     >
-      <label className="block text-sm text-slate-200">
+      <label className="block text-sm text-wikitext">
         Title
         <input
           type="text"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           required
-          className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400"
+          className="mt-1 w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
           placeholder="Band or artist name"
         />
       </label>
 
-      <label className="block text-sm text-slate-200">
+      <label className="block text-sm text-wikitext">
         Location
         <input
           type="text"
           value={location}
           onChange={(event) => setLocation(event.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400"
+          className="mt-1 w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
           placeholder="Town, state"
         />
       </label>
 
-      <label className="block text-sm text-slate-200">
+      <label className="block text-sm text-wikitext">
         Description
         <textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           rows={6}
-          className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400"
+          className="mt-1 w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
           placeholder="Tell people what this act is about…"
         />
       </label>
 
       <div>
-        <p className="text-sm text-slate-200">Genres</p>
+        <p className="text-sm text-wikitext">Genres</p>
         <div className="mt-2">
           <GenrePicker genres={genres} selected={genreIds} onChange={setGenreIds} />
         </div>
       </div>
 
       <div>
-        <p className="text-sm text-slate-200">Photos</p>
+        <p className="text-sm text-wikitext">Photos</p>
 
         {existingImages && existingImages.length > 0 ? (
           <div className="mt-2">
-            <p className="text-xs text-slate-500">Already on this entry:</p>
+            <p className="text-xs text-wikisubtle">Already on this entry:</p>
             <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {existingImages.map((image) => (
-                <img key={image.id} src={image.url} alt={image.caption ?? ''} className="aspect-square w-full rounded-lg object-cover opacity-80" />
+                <img
+                  key={image.id}
+                  src={image.url}
+                  alt={image.caption ?? ''}
+                  className="aspect-square w-full rounded border border-wikiborder-light object-cover opacity-80"
+                />
               ))}
             </div>
           </div>
         ) : null}
 
-        <label className="mt-3 inline-block cursor-pointer rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-emerald-400 hover:text-emerald-200">
+        <label className="mt-3 inline-block cursor-pointer rounded border border-wikiborder bg-wikigray px-4 py-2 text-sm hover:bg-slate-200">
           {uploading ? 'Uploading…' : '+ Add a photo'}
           <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} className="hidden" />
         </label>
-        {uploadError ? <p className="mt-2 text-sm text-red-300">{uploadError}</p> : null}
+        {uploadError ? <p className="mt-2 text-sm text-wikired">{uploadError}</p> : null}
 
         {pendingImages.length > 0 ? (
           <div className="mt-3 space-y-2">
             {pendingImages.map((image) => (
-              <div key={image.path} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-2">
-                <img src={image.url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+              <div
+                key={image.path}
+                className="flex items-center gap-3 rounded border border-wikiborder-light bg-wikigray p-2"
+              >
+                <img src={image.url} alt="" className="h-16 w-16 rounded object-cover" />
                 <input
                   type="text"
                   value={image.caption}
                   onChange={(event) => updateCaption(image.path, event.target.value)}
                   placeholder="Caption (optional)"
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
+                  className="flex-1 rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
                 />
                 <button
                   type="button"
                   onClick={() => removePending(image.path)}
-                  className="shrink-0 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-300 hover:border-red-700 hover:text-red-300"
+                  className="shrink-0 rounded border border-wikiborder px-3 py-2 text-xs text-wikisubtle hover:border-wikired hover:text-wikired"
                 >
                   Remove
                 </button>
@@ -177,13 +185,13 @@ export function EntryForm({
         ) : null}
       </div>
 
-      <label className="block text-sm text-slate-200">
+      <label className="block text-sm text-wikitext">
         Note to the moderator (optional)
         <textarea
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           rows={2}
-          className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400"
+          className="mt-1 w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
           placeholder="Why this change, or where the info came from…"
         />
       </label>
@@ -191,7 +199,7 @@ export function EntryForm({
       <button
         type="submit"
         disabled={submitting || uploading}
-        className="w-full rounded-xl bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
+        className="rounded bg-wikiblue px-4 py-2 text-sm font-semibold text-white transition hover:bg-wikiblue-dark disabled:cursor-not-allowed disabled:opacity-70"
       >
         {submitting ? 'Submitting…' : submitLabel}
       </button>

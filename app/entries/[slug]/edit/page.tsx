@@ -1,11 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../../../lib/api-client';
 import { useCurrentProfile } from '../../../../lib/use-current-profile';
 import { EntryForm, type EntryFormValues } from '../../../../components/EntryForm';
+import { EntryTabs } from '../../../../components/wiki/EntryTabs';
+import { EmptyState } from '../../../../components/wiki/EmptyState';
 import type { EntryDetail } from '../../../../lib/types';
 
 export default function EditEntryPage() {
@@ -31,42 +32,20 @@ export default function EditEntryPage() {
   }, [slug]);
 
   if (profileLoading || loading) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <p className="text-slate-400">Loading…</p>
-      </main>
-    );
+    return <p className="text-wikisubtle">Loading…</p>;
   }
 
   if (!token) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
-        <section className="text-center space-y-4">
-          <p className="text-slate-300">Log in to suggest an edit.</p>
-          <Link
-            href="/login"
-            className="inline-block rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-emerald-400 hover:text-emerald-200"
-          >
-            Go to login
-          </Link>
-        </section>
-      </main>
-    );
+    return <EmptyState message="Log in to suggest an edit." linkHref="/login" linkLabel="Go to login" />;
   }
 
   if (notFound || !entry) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
-        <section className="text-center space-y-4">
-          <p className="text-slate-300">That entry doesn't exist (or was removed).</p>
-          <Link
-            href="/entries"
-            className="inline-block rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-emerald-400 hover:text-emerald-200"
-          >
-            Back to browse
-          </Link>
-        </section>
-      </main>
+      <EmptyState
+        message="That entry doesn't exist (or was removed)."
+        linkHref="/entries"
+        linkLabel="Back to browse"
+      />
     );
   }
 
@@ -94,36 +73,29 @@ export default function EditEntryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-12">
-      <section className="mx-auto w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl shadow-black/30">
-        <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">Suggest an edit</p>
-        <h1 className="mt-2 text-3xl font-semibold">{entry.title}</h1>
-        <p className="mt-2 text-slate-300">A moderator reviews this before it's applied.</p>
+    <div className="mx-auto max-w-2xl">
+      <EntryTabs slug={entry.slug} entryId={entry.id} active="edit" />
 
-        {error ? (
-          <p className="mt-4 rounded-xl border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">{error}</p>
-        ) : null}
+      <h1 className="wiki-title font-serif text-3xl">Editing {entry.title}</h1>
+      <p className="mt-2 text-sm text-wikisubtle">A moderator reviews this before it's applied.</p>
 
-        <EntryForm
-          initial={{
-            title: entry.title,
-            description: entry.description,
-            location: entry.location ?? '',
-            genreIds: entry.genres?.map(({ genre }) => genre.id) ?? [],
-            reason: '',
-          }}
-          existingImages={entry.images}
-          submitLabel="Submit edit for review"
-          submitting={submitting}
-          onSubmit={handleSubmit}
-        />
+      {error ? (
+        <p className="mt-4 rounded border border-wikired bg-red-50 p-3 text-sm text-wikired">{error}</p>
+      ) : null}
 
-        <p className="mt-6 text-sm text-slate-300">
-          <Link href={`/entries/${entry.slug}`} className="text-emerald-300 hover:underline">
-            Back to entry
-          </Link>
-        </p>
-      </section>
-    </main>
+      <EntryForm
+        initial={{
+          title: entry.title,
+          description: entry.description,
+          location: entry.location ?? '',
+          genreIds: entry.genres?.map(({ genre }) => genre.id) ?? [],
+          reason: '',
+        }}
+        existingImages={entry.images}
+        submitLabel="Submit edit for review"
+        submitting={submitting}
+        onSubmit={handleSubmit}
+      />
+    </div>
   );
 }

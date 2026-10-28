@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiFetch } from '../../lib/api-client';
 import { useGenres } from '../../lib/use-genres';
 import { useCurrentProfile } from '../../lib/use-current-profile';
 import type { EntrySummary } from '../../lib/types';
 
-export default function EntriesPage() {
+function EntriesPageContent() {
+  const searchParams = useSearchParams();
   const { token, loading: profileLoading } = useCurrentProfile();
   const genres = useGenres();
 
@@ -18,6 +20,16 @@ export default function EntriesPage() {
   const [queryInput, setQueryInput] = useState('');
   const [query, setQuery] = useState('');
   const [genreId, setGenreId] = useState<number | null>(null);
+
+  // Re-syncs from the URL whenever ?q= changes, including when the header's global
+  // search box pushes a new query while this page is already mounted — Next reuses
+  // the same component instance on a same-route navigation, so without this the
+  // search box would silently do nothing.
+  const qParam = searchParams.get('q') ?? '';
+  useEffect(() => {
+    setQueryInput(qParam);
+    setQuery(qParam);
+  }, [qParam]);
 
   useEffect(() => {
     setLoading(true);
@@ -33,125 +45,93 @@ export default function EntriesPage() {
   }, [query, genreId]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-12">
-      <section className="mx-auto w-full max-w-4xl">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">NE Scene-pedia</p>
-            <h1 className="mt-2 text-3xl font-semibold">Browse bands &amp; artists</h1>
-          </div>
+    <div>
+      <h1 className="wiki-title font-serif text-3xl">Browse bands &amp; artists</h1>
 
-          {!profileLoading && token ? (
-            <Link
-              href="/entries/new"
-              className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
-            >
-              + Add a new entry
-            </Link>
-          ) : null}
-        </div>
-
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            setQuery(queryInput.trim());
-          }}
-          className="mt-8 flex gap-3"
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          setQuery(queryInput.trim());
+        }}
+        className="mt-4 flex gap-2"
+      >
+        <input
+          type="text"
+          value={queryInput}
+          onChange={(event) => setQueryInput(event.target.value)}
+          placeholder="Search by name, description, or town…"
+          className="w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
+        />
+        <button
+          type="submit"
+          className="shrink-0 rounded border border-wikiborder bg-wikigray px-4 py-2 text-sm hover:bg-slate-200"
         >
-          <input
-            type="text"
-            value={queryInput}
-            onChange={(event) => setQueryInput(event.target.value)}
-            placeholder="Search by name, description, or town…"
-            className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400"
-          />
+          Search
+        </button>
+      </form>
+
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <button
+          onClick={() => setGenreId(null)}
+          className={genreId === null ? 'font-semibold text-wikitext' : 'text-wikiblue hover:underline'}
+        >
+          All genres
+        </button>
+        {genres.map((genre) => (
           <button
-            type="submit"
-            className="shrink-0 rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 text-sm hover:border-emerald-400 hover:text-emerald-200"
+            key={genre.id}
+            onClick={() => setGenreId(genre.id === genreId ? null : genre.id)}
+            className={genre.id === genreId ? 'font-semibold text-wikitext' : 'text-wikiblue hover:underline'}
           >
-            Search
+            {genre.name}
           </button>
-        </form>
+        ))}
+      </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setGenreId(null)}
-            className={`rounded-full border px-3 py-1 text-sm transition ${
-              genreId === null
-                ? 'border-emerald-400 bg-emerald-400/10 text-emerald-200'
-                : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-600'
-            }`}
-          >
-            All genres
-          </button>
-          {genres.map((genre) => (
-            <button
-              key={genre.id}
-              onClick={() => setGenreId(genre.id === genreId ? null : genre.id)}
-              className={`rounded-full border px-3 py-1 text-sm transition ${
-                genre.id === genreId
-                  ? 'border-emerald-400 bg-emerald-400/10 text-emerald-200'
-                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-600'
-              }`}
-            >
-              {genre.name}
-            </button>
-          ))}
-        </div>
-
-        {error ? (
-          <p className="mt-6 rounded-xl border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">{error}</p>
-        ) : null}
-
-        <div className="mt-8 space-y-3">
-          {loading ? (
-            <p className="text-slate-400">Loading…</p>
-          ) : entries.length === 0 ? (
-            <p className="text-slate-400">
-              No entries match yet.{' '}
-              {token ? (
-                <Link href="/entries/new" className="text-emerald-300 hover:underline">
-                  Add the first one.
-                </Link>
-              ) : null}
-            </p>
-          ) : (
-            entries.map((entry) => (
-              <Link
-                key={entry.id}
-                href={`/entries/${entry.slug}`}
-                className="block rounded-2xl border border-slate-800 bg-slate-900/80 p-5 transition hover:border-emerald-400/60"
-              >
-                <div className="flex items-baseline justify-between gap-4">
-                  <h2 className="text-xl font-semibold">{entry.title}</h2>
-                  {entry.location ? <span className="text-sm text-slate-400">{entry.location}</span> : null}
-                </div>
-                {entry.description ? (
-                  <p className="mt-2 line-clamp-2 text-sm text-slate-300">{entry.description}</p>
-                ) : null}
-                {entry.genres && entry.genres.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {entry.genres.map(({ genre }) => (
-                      <span
-                        key={genre.id}
-                        className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-0.5 text-xs text-slate-300"
-                      >
-                        {genre.name}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </Link>
-            ))
-          )}
-        </div>
-
-        <p className="mt-10 text-sm text-slate-300">
-          <Link href="/" className="text-emerald-300 hover:underline">
-            Back to home
-          </Link>
+      {!profileLoading && token ? (
+        <p className="mt-4 text-sm">
+          <Link href="/entries/new">+ Add a new entry</Link>
         </p>
-      </section>
-    </main>
+      ) : null}
+
+      {error ? (
+        <p className="mt-6 rounded border border-wikired bg-red-50 p-3 text-sm text-wikired">{error}</p>
+      ) : null}
+
+      <ul className="mt-6 divide-y divide-wikiborder-light border-t border-wikiborder-light">
+        {loading ? (
+          <li className="py-4 text-wikisubtle">Loading…</li>
+        ) : entries.length === 0 ? (
+          <li className="py-4 text-wikisubtle">
+            No entries match yet. {token ? <Link href="/entries/new">Add the first one.</Link> : null}
+          </li>
+        ) : (
+          entries.map((entry) => (
+            <li key={entry.id} className="py-3">
+              <Link href={`/entries/${entry.slug}`} className="text-lg">
+                {entry.title}
+              </Link>
+              {entry.location ? <span className="ml-2 text-sm text-wikisubtle">({entry.location})</span> : null}
+              {entry.description ? (
+                <p className="mt-1 line-clamp-2 text-sm text-wikitext">{entry.description}</p>
+              ) : null}
+              {entry.genres && entry.genres.length > 0 ? (
+                <p className="mt-1 text-xs text-wikisubtle">
+                  {entry.genres.map(({ genre }) => genre.name).join(' · ')}
+                </p>
+              ) : null}
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  );
+}
+
+export default function EntriesPage() {
+  return (
+    <Suspense fallback={<p className="text-wikisubtle">Loading…</p>}>
+      <EntriesPageContent />
+    </Suspense>
   );
 }

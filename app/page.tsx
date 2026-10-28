@@ -1,21 +1,42 @@
+import Link from 'next/link';
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
-      <section className="w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900/80 p-10 shadow-2xl shadow-black/30">
-        <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">SSU Starter App</p>
-        <h1 className="mt-4 text-4xl font-semibold">Professor Brockenbrough's Next Starter App</h1>
-        <p className="mt-4 max-w-2xl text-slate-300">
-          This starter includes login and register routes, Tailwind styling, and backend tests ready for students to clone and extend.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-4 text-sm text-slate-200">
-          <a href="/entries" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Browse the wiki</a>
-          <a href="/discussions" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Discussions</a>
-          <a href="/requests" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">My requests</a>
-          <a href="/login" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Go to login</a>
-          <a href="/register" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Go to register</a>
-          <a href="/profile" className="rounded-full border border-slate-700 bg-slate-800 px-4 py-2 hover:border-emerald-400 hover:text-emerald-200">Go to profile</a>
-        </div>
-      </section>
-    </main>
+    <div>
+      <h1 className="wiki-title font-serif text-4xl">Welcome to NE Scene-pedia</h1>
+      <p className="mt-4 text-wikitext">
+        NE Scene-pedia is a free wiki documenting bands and artists from the New England local music
+        scene, built by and for the people who go to the shows. Anyone can browse; registered users
+        can propose new entries and edits, and start discussions.
+      </p>
+
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <section>
+          <h2 className="wiki-title font-serif text-xl">Getting started</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+            <li>
+              <Link href="/entries">Browse bands &amp; artists</Link>
+            </li>
+            <li>
+              <Link href="/discussions">Join a discussion</Link>
+            </li>
+            <li>
+              <Link href="/register">Create an account</Link>
+            </li>
+            <li>
+              <Link href="/entries/new">Add a new entry</Link>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="wiki-title font-serif text-xl">About this project</h2>
+          <p className="mt-2 text-sm text-wikisubtle">
+            Every new entry and edit goes through moderator review before it's published, and every
+            approved change is recorded on that entry's history.
+          </p>
+        </section>
+      </div>
+    </div>
   );
 }

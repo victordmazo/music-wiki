@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../../../lib/api-client';
 import { useCurrentProfile } from '../../../lib/use-current-profile';
+import { EmptyState } from '../../../components/wiki/EmptyState';
 import type { Discussion, Post } from '../../../lib/types';
 
 export default function DiscussionThreadPage() {
@@ -84,157 +85,126 @@ export default function DiscussionThreadPage() {
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <p className="text-slate-400">Loading…</p>
-      </main>
-    );
+    return <p className="text-wikisubtle">Loading…</p>;
   }
 
   if (notFound || !discussion) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
-        <section className="text-center space-y-4">
-          <p className="text-slate-300">That discussion doesn't exist.</p>
-          <Link
-            href="/discussions"
-            className="inline-block rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-sm hover:border-emerald-400 hover:text-emerald-200"
-          >
-            Back to discussions
-          </Link>
-        </section>
-      </main>
-    );
+    return <EmptyState message="That discussion doesn't exist." linkHref="/discussions" linkLabel="Back to discussions" />;
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 px-6 py-12">
-      <section className="mx-auto w-full max-w-2xl">
-        <p className="text-sm uppercase tracking-[0.25em] text-emerald-300">Discussion</p>
-        <h1 className="mt-2 text-3xl font-semibold">{discussion.title}</h1>
-        {discussion.entry ? (
-          <p className="mt-1 text-sm text-slate-400">
-            About{' '}
-            <Link href={`/entries/${discussion.entry.slug}`} className="text-emerald-300 hover:underline">
-              {discussion.entry.title}
-            </Link>
-          </p>
-        ) : null}
-
-        {error ? (
-          <p className="mt-4 rounded-xl border border-red-800 bg-red-900/30 p-3 text-sm text-red-300">{error}</p>
-        ) : null}
-
-        <div className="mt-8 space-y-4">
-          {posts.length === 0 ? (
-            <p className="text-slate-400">No comments yet.</p>
-          ) : (
-            posts.map((post) => {
-              const isOwn = post.author_id === profile?.id;
-              const canDelete = isOwn || isModerator;
-              const busy = busyId === post.id;
-
-              return (
-                <div key={post.id} className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-slate-200">{post.author?.username ?? 'someone'}</span>
-                    <span className="text-xs text-slate-500">
-                      {new Date(post.created_at).toLocaleString()}
-                      {post.edited_at ? ' (edited)' : ''}
-                    </span>
-                  </div>
-
-                  {editingId === post.id ? (
-                    <div className="mt-2 space-y-2">
-                      <textarea
-                        value={editValue}
-                        onChange={(event) => setEditValue(event.target.value)}
-                        rows={2}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-emerald-400"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSaveEdit(post.id)}
-                          disabled={busy}
-                          className="rounded-full bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-70"
-                        >
-                          {busy ? 'Saving…' : 'Save'}
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs hover:border-slate-600"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">{post.contents}</p>
-                  )}
-
-                  {editingId !== post.id && token ? (
-                    <div className="mt-3 flex gap-3 text-xs">
-                      {isOwn ? (
-                        <button
-                          onClick={() => {
-                            setEditingId(post.id);
-                            setEditValue(post.contents);
-                          }}
-                          className="text-slate-400 hover:text-emerald-300"
-                        >
-                          Edit
-                        </button>
-                      ) : null}
-                      {canDelete ? (
-                        <button
-                          onClick={() => handleDelete(post.id)}
-                          disabled={busy}
-                          className="text-slate-400 hover:text-red-300 disabled:opacity-70"
-                        >
-                          {busy ? 'Deleting…' : 'Delete'}
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {!profileLoading && token ? (
-          <form onSubmit={handlePost} className="mt-8 space-y-3">
-            <textarea
-              value={composerValue}
-              onChange={(event) => setComposerValue(event.target.value)}
-              required
-              rows={3}
-              placeholder="Add a comment…"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none transition focus:border-emerald-400"
-            />
-            <button
-              type="submit"
-              disabled={posting}
-              className="rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-70"
-            >
-              {posting ? 'Posting…' : 'Post comment'}
-            </button>
-          </form>
-        ) : !profileLoading ? (
-          <p className="mt-8 text-sm text-slate-300">
-            <Link href="/login" className="text-emerald-300 hover:underline">
-              Log in
-            </Link>{' '}
-            to join the discussion.
-          </p>
-        ) : null}
-
-        <p className="mt-10 text-sm text-slate-300">
-          <Link href="/discussions" className="text-emerald-300 hover:underline">
-            Back to discussions
-          </Link>
+    <div className="mx-auto max-w-2xl">
+      <h1 className="wiki-title font-serif text-3xl">{discussion.title}</h1>
+      {discussion.entry ? (
+        <p className="mt-1 text-sm text-wikisubtle">
+          About <Link href={`/entries/${discussion.entry.slug}`}>{discussion.entry.title}</Link>
         </p>
-      </section>
-    </main>
+      ) : null}
+
+      {error ? (
+        <p className="mt-4 rounded border border-wikired bg-red-50 p-3 text-sm text-wikired">{error}</p>
+      ) : null}
+
+      <div className="mt-6 space-y-4">
+        {posts.length === 0 ? (
+          <p className="text-wikisubtle">No comments yet.</p>
+        ) : (
+          posts.map((post) => {
+            const isOwn = post.author_id === profile?.id;
+            const canDelete = isOwn || isModerator;
+            const busy = busyId === post.id;
+
+            return (
+              <div key={post.id} className="rounded border border-wikiborder-light bg-wikigray p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-wikitext">{post.author?.username ?? 'someone'}</span>
+                  <span className="text-xs text-wikisubtle">
+                    {new Date(post.created_at).toLocaleString()}
+                    {post.edited_at ? ' (edited)' : ''}
+                  </span>
+                </div>
+
+                {editingId === post.id ? (
+                  <div className="mt-2 space-y-2">
+                    <textarea
+                      value={editValue}
+                      onChange={(event) => setEditValue(event.target.value)}
+                      rows={2}
+                      className="w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSaveEdit(post.id)}
+                        disabled={busy}
+                        className="rounded bg-wikiblue px-3 py-1.5 text-xs font-semibold text-white hover:bg-wikiblue-dark disabled:opacity-70"
+                      >
+                        {busy ? 'Saving…' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="rounded border border-wikiborder px-3 py-1.5 text-xs hover:bg-slate-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-wikitext">{post.contents}</p>
+                )}
+
+                {editingId !== post.id && token ? (
+                  <div className="mt-3 flex gap-3 text-xs">
+                    {isOwn ? (
+                      <button
+                        onClick={() => {
+                          setEditingId(post.id);
+                          setEditValue(post.contents);
+                        }}
+                        className="text-wikiblue hover:underline"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
+                    {canDelete ? (
+                      <button
+                        onClick={() => handleDelete(post.id)}
+                        disabled={busy}
+                        className="text-wikired hover:underline disabled:opacity-70"
+                      >
+                        {busy ? 'Deleting…' : 'Delete'}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {!profileLoading && token ? (
+        <form onSubmit={handlePost} className="mt-8 space-y-3">
+          <textarea
+            value={composerValue}
+            onChange={(event) => setComposerValue(event.target.value)}
+            required
+            rows={3}
+            placeholder="Add a comment…"
+            className="w-full rounded border border-wikiborder px-3 py-2 text-sm text-wikitext outline-none focus:border-wikiblue-dark"
+          />
+          <button
+            type="submit"
+            disabled={posting}
+            className="rounded bg-wikiblue px-4 py-2 text-sm font-semibold text-white hover:bg-wikiblue-dark disabled:opacity-70"
+          >
+            {posting ? 'Posting…' : 'Post comment'}
+          </button>
+        </form>
+      ) : !profileLoading ? (
+        <p className="mt-8 text-sm text-wikitext">
+          <Link href="/login">Log in</Link> to join the discussion.
+        </p>
+      ) : null}
+    </div>
   );
 }

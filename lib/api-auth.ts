@@ -1,4 +1,7 @@
 import { getSupabaseClient } from './supabase';
+import { isModerator } from './permissions';
+
+export { isModerator };
 
 export type Role = 'user' | 'moderator';
 export type UserStatus = 'active' | 'suspended' | 'banned';
@@ -82,9 +85,4 @@ export function isActiveNow(profile: Profile | null): boolean {
     return new Date(profile.suspended_until).getTime() <= Date.now();
   }
   return false;
-}
-
-/** True when the user is a moderator whose own account is in good standing. */
-export function isModerator(profile: Profile | null): boolean {
-  return profile?.role === 'moderator' && profile?.status === 'active';
 }

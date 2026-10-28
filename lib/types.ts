@@ -10,6 +10,14 @@ export type Profile = {
   status: UserStatus;
 };
 
+export type UserAccount = {
+  id: string;
+  username: string;
+  role: Role;
+  status: UserStatus;
+  suspended_until: string | null;
+};
+
 export type Genre = { id: number; name: string };
 
 export type EntrySummary = {

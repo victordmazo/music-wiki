@@ -15,26 +15,18 @@ export function GenrePicker({
   }
 
   if (genres.length === 0) {
-    return <p className="text-sm text-slate-500">Loading genres…</p>;
+    return <p className="text-sm text-wikisubtle">Loading genres…</p>;
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
       {genres.map((genre) => {
         const active = selected.includes(genre.id);
         return (
-          <button
-            type="button"
-            key={genre.id}
-            onClick={() => toggle(genre.id)}
-            className={`rounded-full border px-3 py-1 text-sm transition ${
-              active
-                ? 'border-emerald-400 bg-emerald-400/10 text-emerald-200'
-                : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-600'
-            }`}
-          >
+          <label key={genre.id} className="flex items-center gap-1.5">
+            <input type="checkbox" checked={active} onChange={() => toggle(genre.id)} className="accent-wikiblue" />
             {genre.name}
-          </button>
+          </label>
         );
       })}
     </div>

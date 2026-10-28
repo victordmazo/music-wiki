@@ -37,6 +37,25 @@ describe('GET /api/discussions', () => {
 
     expect(response.status).toBe(500);
   });
+
+  it('filters by a valid numeric entry_id', async () => {
+    mockGetSupabaseClient.mockReturnValue(
+      createSupabaseMock({ fromQueue: [ok([{ id: 1, entry_id: 5, title: 'About entry 5' }])] }) as never
+    );
+
+    const response = await listDiscussions(new Request('http://localhost/api/discussions?entry_id=5'));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ discussions: [{ id: 1, entry_id: 5, title: 'About entry 5' }] });
+  });
+
+  it('rejects a non-numeric entry_id instead of erroring on the database', async () => {
+    mockGetSupabaseClient.mockReturnValue(createSupabaseMock({}) as never);
+
+    const response = await listDiscussions(new Request('http://localhost/api/discussions?entry_id=abc'));
+
+    expect(response.status).toBe(400);
+  });
 });
 
 describe('POST /api/discussions', () => {
