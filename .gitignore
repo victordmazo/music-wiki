@@ -3,3 +3,9 @@ node_modules
 .env.local
 .env
 coverage
+
+# This project uses npm (package-lock.json); keep a stray pnpm/yarn lockfile from
+# being committed, since Vercel auto-detects whichever one it finds and a second,
+# out-of-sync lockfile breaks the deploy.
+pnpm-lock.yaml
+yarn.lock
